@@ -13,5 +13,67 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\Shaders">
+      <UniqueIdentifier>{8eb5a4d6-6e92-4925-9cb0-b50790eacdcf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\dxut">
+      <UniqueIdentifier>{8ffffc33-3053-4b07-8fbb-0ece69d5a724}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\dxut\src\mesh.cpp">
+      <Filter>Source Files\dxut</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\dxut\src\DXWindow.cpp">
+      <Filter>Source Files\dxut</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\dxut\src\SimpleCamera.cpp">
+      <Filter>Source Files\dxut</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="city_app.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="meshgen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="basic.ps.hlsl">
+      <Filter>Source Files\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="basic.vs.hlsl">
+      <Filter>Source Files\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="blur.ps.hlsl">
+      <Filter>Source Files\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="fsq.vs.hlsl">
+      <Filter>Source Files\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="ground.ps.hlsl">
+      <Filter>Source Files\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="instance.vs.hlsl">
+      <Filter>Source Files\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="postprocess.ps.hlsl">
+      <Filter>Source Files\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="beacon.ps.hlsl">
+      <Filter>Source Files\Shaders</Filter>
+    </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="hash.hlsli">
+      <Filter>Source Files\Shaders</Filter>
+    </None>
+    <None Include="psc.hlsli">
+      <Filter>Source Files\Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
