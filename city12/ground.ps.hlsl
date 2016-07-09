@@ -1,11 +1,4 @@
-struct PSInput
-{
-	float4 position	: SV_POSITION;
-	float3 normal : NORMAL;
-	float3 pos_world : POSITION;
-	float3 pos_local : POSITION1;
-	float2 uv		: TEXCOORD0;
-};
+
 
 cbuffer cb0 : register(b0)
 {
@@ -50,11 +43,20 @@ float stripes(float2 p) {
 	return step(frac((p.x - (street_width*.5f)) / block_world_size), .01f)*step(abs(sin(p.y)), 0.8f)* (1.f - step(frac(p.y / block_world_size)*block_world_size, street_width));
 }
 
+float intersection(float2 p) {
+	float2 gp = frac(p / block_world_size)*block_world_size;
+	float2 v = step(gp, street_width);
+	float mask = 1.f-abs(v.x-v.y);
+	gp -= street_width*.5f;
+	float d = max(abs(gp.x), abs(gp.y)) - 6.;
+	return mask * 1.-step(d, 0.f);
+}
+
 PSOutput main(PSInput input) : SV_TARGET
 {
 	float g = IsGridLine(input.pos_world.xz);
 	float2 p = input.pos_world.xz;
 	float4 street_col = float4(0.02f, 0.02f, 0.02f, 1.f) +
-		float4(0.3f, 0.3f, 0.3f, 0.f) * (stripes(p) + stripes(p.yx));
+		float4(0.3f, 0.3f, 0.3f, 0.f) * (stripes(p) + stripes(p.yx) + intersection(p));
 	return OV(g*street_col + float4(0.02f,0.02f,0.02f,1.f));
 }

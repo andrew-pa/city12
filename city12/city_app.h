@@ -1,5 +1,6 @@
 #pragma once
 #include <dxut/dxut.h>
+#include "meshgen.h"
 
 struct city_app : public DXWindow, public DXDevice {
 
@@ -18,9 +19,10 @@ struct city_app : public DXWindow, public DXDevice {
 
 	mesh cube_mesh;
 	mesh beacon_mesh;
-	ComPtr<ID3D12Resource> inst_res, beacon_inst_res;
-	D3D12_VERTEX_BUFFER_VIEW inst_vbv, beacon_inst_vbv;
-	pass building_pass, beacon_pass, object_pass, ground_pass, blur_pass, postprocess_pass;
+	mesh sidewalk_mesh;
+	ComPtr<ID3D12Resource> inst_res, beacon_inst_res, sidewalk_inst_res;
+	D3D12_VERTEX_BUFFER_VIEW inst_vbv, beacon_inst_vbv, sidewalk_inst_vbv;
+	pass building_pass, beacon_pass, object_pass, ground_pass, sidewalk_pass, blur_pass, postprocess_pass;
 	uint32_t num_inst, num_beacons;
 
 	mesh fsq_mesh;
@@ -61,8 +63,53 @@ struct city_app : public DXWindow, public DXDevice {
 #pragma region Create City
 		cube_mesh = mesh(this, commandList, generate_cube_mesh(XMFLOAT3(1.f,1.f,1.f)));
 		beacon_mesh = mesh(this, commandList, generate_sphere_mesh(.7f, 16, 16));
+		/*
+			0--8----9--1
+			|  l    l  |
+			|  4----5  |
+			|  |    |  |
+			|  7----6  |
+			|  l    l  |
+			3--E----X--2
+			   ^~~d~^~r^
+			d = 0.5, r = 0.25
+		*/
+		const float sidewalk_width = 0.05f; //percentage
+		sidewalk_mesh = mesh(this, commandList, meshgen::qmesh({
+			vertex(0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f), //0
+			vertex(0.f, 0.f, 1.f, 0.f, 1.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f), //1
+			vertex(1.f, 0.f, 1.f, 0.f, 1.f, 0.f, 1.f, 0.f, 0.f, 1.f, 1.f), //2
+			vertex(1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 1.f, 0.f, 0.f, 1.f, 0.f), //3
+			
+			vertex(sidewalk_width, 0.f, sidewalk_width, 0.f, 1.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f), //4
+			vertex(sidewalk_width, 0.f, 1.f-sidewalk_width, 0.f, 1.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f), //5
+			vertex(1.f-sidewalk_width, 0.f, 1.f-sidewalk_width, 0.f, 1.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f), //6
+			vertex(1.f-sidewalk_width, 0.f, sidewalk_width, 0.f, 1.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f), //7
 
-		vector<XMFLOAT4X4> d; vector<XMFLOAT4X4> beaconT;
+			vertex(0.f, 0.f, sidewalk_width, 0.f, 1.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f), //8
+			vertex(0.f, 0.f, 1.f-sidewalk_width, 0.f, 1.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f), //9
+			vertex(1.f, 0.f, 1.f-sidewalk_width, 0.f, 1.f, 0.f, 1.f, 0.f, 0.f, 1.f, 1.f), //X
+			vertex(1.f, 0.f, sidewalk_width, 0.f, 1.f, 0.f, 1.f, 0.f, 0.f, 1.f, 0.f), //E
+
+
+			vertex(0.f, -0.4f, 0.f, 0.f, 1.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f), //12 -> 0
+			vertex(0.f, -0.4f, 1.f, 0.f, 1.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f), //13 -> 1
+			vertex(1.f, -0.4f, 1.f, 0.f, 1.f, 0.f, 1.f, 0.f, 0.f, 1.f, 1.f), //14 -> 2
+			vertex(1.f, -0.4f, 0.f, 0.f, 1.f, 0.f, 1.f, 0.f, 0.f, 1.f, 0.f), //15 -> 3
+		}, {
+			{0, 8, 11, 3},
+			{9, 1, 2, 10},
+			{8, 9, 5, 4},
+			{7, 6, 10, 11},
+			{0,3,15,12},
+			{2,1,13,14},
+			{1,0,12,13},
+			{3,2,14,15}
+		}).generate());
+
+		vector<XMFLOAT4X4> d; vector<XMFLOAT4X4> beaconT; vector<XMFLOAT4X4> swT;
+		XMMATRIX sidewalkAllT = XMMatrixScaling(ac_block_world_size + ac_block_world_size*sidewalk_width*2.2f, 1.f, ac_block_world_size + ac_block_world_size*sidewalk_width*2.2f);
+
 		const float size_of_alley = 0.1f; //of ac_block_world_size
 		for (int z = 0; z < num_blocks; ++z) {
 			float zPos = (float)z * block_world_size + (-grid_world_size*.5f) + street_width;
@@ -75,11 +122,16 @@ struct city_app : public DXWindow, public DXDevice {
 				create_building(xPos + ac_block_world_size*pW, zPos, ac_block_world_size*(1.f - pW), ac_block_world_size*(pL - size_of_alley), d, beaconT);
 				create_building(xPos, zPos + ac_block_world_size*pL, ac_block_world_size*(pW - size_of_alley), ac_block_world_size*(1.f - pL), d, beaconT);
 				create_building(xPos + ac_block_world_size*pW, zPos + ac_block_world_size*pL, ac_block_world_size*(1.f - pW), ac_block_world_size*(1.f - pL), d, beaconT);
+
+				auto swi = swT.size();
+				swT.push_back(XMFLOAT4X4());
+				XMStoreFloat4x4(&swT[swi], sidewalkAllT * XMMatrixTranslation(xPos - ac_block_world_size*sidewalk_width*1.1f, .5f, zPos - ac_block_world_size*sidewalk_width*1.1f));
 			}
 		}
 
 		mesh::create_instance_buffer(this, commandList, d.data(), d.size()*sizeof(XMFLOAT4X4), sizeof(XMFLOAT4X4), &inst_vbv, inst_res);
 		mesh::create_instance_buffer(this, commandList, beaconT.data(), beaconT.size() * sizeof(XMFLOAT4X4), sizeof(XMFLOAT4X4), &beacon_inst_vbv, beacon_inst_res);
+		mesh::create_instance_buffer(this, commandList, swT.data(), swT.size() * sizeof(XMFLOAT4X4), sizeof(XMFLOAT4X4), &sidewalk_inst_vbv, sidewalk_inst_res);
 		num_inst = d.size();
 		num_beacons = beaconT.size();
 #pragma endregion
@@ -163,6 +215,9 @@ struct city_app : public DXWindow, public DXDevice {
 			root_parameterh::constants(16, 0),
 		}, {}, pdesc, L"Building");
 
+		pdesc.PS = load_shader(GetAssetFullPath(L"sidewalk.ps.cso"));
+		sidewalk_pass = pass(this, building_pass.root_sig, pdesc);
+
 		pdesc.PS = load_shader(GetAssetFullPath(L"beacon.ps.cso"));
 		beacon_pass = pass(this, {
 			root_parameterh::constants(16, 0),
@@ -170,12 +225,13 @@ struct city_app : public DXWindow, public DXDevice {
 		}, {}, pdesc, L"Beacon");
 
 		pdesc.VS = load_shader(GetAssetFullPath(L"basic.vs.cso"));
+
 		pdesc.InputLayout = { input_layout, _countof(input_layout) };
+		pdesc.PS = load_shader(GetAssetFullPath(L"ground.ps.cso"));
 		object_pass = pass(this, {
 			root_parameterh::constants(16, 0),
 			root_parameterh::constants(16, 1),
 		}, {}, pdesc, L"Object");
-		pdesc.PS = load_shader(GetAssetFullPath(L"ground.ps.cso"));
 		ground_pass = pass(this, object_pass.root_sig, pdesc);
 
 		pdesc = {};
@@ -213,7 +269,7 @@ struct city_app : public DXWindow, public DXDevice {
 		wait_for_gpu();
 		empty_upload_pool();
 
-		cam.Init(XMFLOAT3(0.f, 5.f, 5.f));
+		cam.Init(XMFLOAT3(0.f, 35.f, 5.f));
 	}
 
 	void OnUpdate() override {
@@ -228,7 +284,7 @@ struct city_app : public DXWindow, public DXDevice {
 
 
 		XMFLOAT4X4 camT; XMStoreFloat4x4(&camT,
-			cam.GetViewMatrix()*cam.GetProjectionMatrix(20.f, aspectRatio));
+			cam.GetViewMatrix()*cam.GetProjectionMatrix(45.f, aspectRatio, 1.f, 5000.f));
 
 		//wchar_t out[32];
 		//wsprintf(out, L"FPS: %d\n", tim.GetFramesPerSecond());
@@ -267,6 +323,12 @@ struct city_app : public DXWindow, public DXDevice {
 			XMMatrixScaling(grid_world_size, .1f, grid_world_size));
 		cl->SetGraphicsRoot32BitConstants(1, 16, &T, 0);
 		cube_mesh.draw(cl);
+
+		sidewalk_pass.apply(cl);
+		cl->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		cl->SetGraphicsRoot32BitConstants(0, 16, &camT, 0);
+		sidewalk_mesh.draw(cl, num_blocks*num_blocks, { sidewalk_inst_vbv });
+		
 
 		resource_barrier(cl, {
 			CD3DX12_RESOURCE_BARRIER::Transition(bufs[0].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE),

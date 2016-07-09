@@ -6,6 +6,7 @@ struct VSInput
 	float2 uv		: TEXCOORD0;
 	float3 tangent	: TANGENT;
 	float4x4 instanceT : TRANSFORM;
+	uint instanceID : SV_InstanceID;
 };
 
 struct PSInput
@@ -15,6 +16,7 @@ struct PSInput
 	float3 pos_world : POSITION;
 	float3 pos_local : POSITION1;
 	float2 uv		: TEXCOORD0;
+	uint iid : ID;
 };
 
 cbuffer cb0 : register(b0)
@@ -31,6 +33,7 @@ PSInput main(VSInput input)
 	result.pos_local = input.position;
 	result.normal = mul(float4(input.normal, 0.f), input.instanceT);
 	result.uv = input.uv;
+	result.iid = input.instanceID;
 
 	return result;
 }

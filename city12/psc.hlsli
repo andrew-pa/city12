@@ -1,3 +1,17 @@
+
+struct PSInput
+{
+	float4 position	: SV_POSITION;
+	float3 normal : NORMAL;
+	float3 pos_world : POSITION;
+	float3 pos_local : POSITION1;
+	float2 uv		: TEXCOORD0;
+#ifdef INSTANCED
+	uint iid : ID;
+#endif
+};
+
+
 struct PSOutput {
 	float4 color : SV_TARGET0;
 	float4 overflow: SV_TARGET1;

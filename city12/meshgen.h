@@ -2,28 +2,32 @@
 #include <dxut/mesh.h>
 
 namespace meshgen {
-	struct face {
-		vector<size_t> vertices;
+	struct quad {
+		size_t v[4];
 	};
 
-	struct pmesh {
+	struct qmesh {
 		vector<vertex> vertices;
-		vector<face> faces;
+		vector<quad> quads;
 	
-		
-	};
+		qmesh(const vector<vertex>& V = {}, const vector<quad>& Q = {})
+			: vertices(V), quads(Q) {}
 
-	mesh_data generate(const pmesh& p) {
-		vector<uint32_t> indices;
 
-		for (const auto& f : p.faces) {
-			for (int i = 0; i < f.vertices.size()-2; i+=3) {
-				indices.push_back(f.vertices[i]);
-				indices.push_back(f.vertices[i+1]);
-				indices.push_back(f.vertices[i+2]);
+		mesh_data generate() {
+			vector<uint32_t> indices;
+
+			for (const auto& f : quads) {
+				indices.push_back(f.v[0]);
+				indices.push_back(f.v[1]);
+				indices.push_back(f.v[2]);
+
+				indices.push_back(f.v[0]);
+				indices.push_back(f.v[2]);
+				indices.push_back(f.v[3]);
 			}
-		}
 
-		return{ p.vertices, indices };
-	}
+			return{ vertices, indices };
+		}
+	};
 }
