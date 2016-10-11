@@ -17,7 +17,7 @@ struct PSOutput {
 	float4 overflow: SV_TARGET1;
 };
 
-PSOutput OV(float4 col) {
+PSOutput OV(float4 col, PSInput i) {
 	PSOutput o;
 	float L = dot(col.rgb, float3(0.2126f, 0.7152f, 0.0722f));
 	if (L > .9f)

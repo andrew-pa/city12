@@ -58,5 +58,5 @@ PSOutput main(PSInput input) : SV_TARGET
 	float2 p = input.pos_world.xz;
 	float4 street_col = float4(0.02f, 0.02f, 0.02f, 1.f) +
 		float4(0.3f, 0.3f, 0.3f, 0.f) * (stripes(p) + stripes(p.yx) + intersection(p));
-	return OV(g*street_col + float4(0.02f,0.02f,0.02f,1.f));
+	return OV(g*street_col + float4(0.02f,0.02f,0.02f,1.f), input);
 }

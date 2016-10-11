@@ -34,7 +34,7 @@ struct city_app : public DXWindow, public DXDevice {
 	const float num_blocks = grid_world_size / block_world_size;
 	const float min_height = 15.f;
 	const float max_height = 60.f;
-	const float beacon_min_height = 55.f;
+	const float beacon_min_height = 90.f;
 
 	inline float calc_rand_height() {
 		return powf(randf(),3.f)*(max_height - min_height) + min_height +
@@ -144,32 +144,14 @@ struct city_app : public DXWindow, public DXDevice {
 
 		rtv_heap = descriptor_heap(device, num_bufs, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, false);
 		rtsrv_heap = descriptor_heap(device, num_bufs, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
-		D3D12_RESOURCE_DESC rsd = {};
-		rsd.MipLevels = 1;
-		rsd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		rsd.Width = width;
-		rsd.Height = height;
-		rsd.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-		rsd.DepthOrArraySize = 1;
-		rsd.SampleDesc.Count = 1;
-		rsd.SampleDesc.Quality = 0;
-		rsd.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-		D3D12_RENDER_TARGET_VIEW_DESC rvd;
-		rvd.Format = rsd.Format;
-		rvd.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-		rvd.Texture2D.MipSlice = 0;
-		rvd.Texture2D.PlaneSlice = 0;
-		D3D12_SHADER_RESOURCE_VIEW_DESC srvd = {};
-		srvd.Format = rsd.Format;
-		srvd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		srvd.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-		srvd.Texture2D.MipLevels = 1;
+		
 		for (int i = 0; i < num_bufs; ++i) {
-			chk(device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-				D3D12_HEAP_FLAG_NONE, &rsd, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-				&CD3DX12_CLEAR_VALUE(rsd.Format, color_black), IID_PPV_ARGS(&bufs[i])));
-			device->CreateRenderTargetView(bufs[i].Get(), &rvd, rtv_heap.cpu_handle(i));
-			device->CreateShaderResourceView(bufs[i].Get(), &srvd, rtsrv_heap.cpu_handle(i));
+			chk(device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), D3D12_HEAP_FLAG_NONE, 
+				&CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, width, height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET),
+				D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+				&CD3DX12_CLEAR_VALUE(DXGI_FORMAT_R8G8B8A8_UNORM, color_black), IID_PPV_ARGS(&bufs[i])));
+			device->CreateRenderTargetView(bufs[i].Get(), nullptr, rtv_heap.cpu_handle(i));
+			device->CreateShaderResourceView(bufs[i].Get(), nullptr, rtsrv_heap.cpu_handle(i));
 			bufs[i]->SetName(L"Intermediate Buffer");
 		}
 
@@ -270,6 +252,7 @@ struct city_app : public DXWindow, public DXDevice {
 		empty_upload_pool();
 
 		cam.Init(XMFLOAT3(0.f, 35.f, 5.f));
+		cam.moveSpeed = 100.f;
 	}
 
 	void OnUpdate() override {
@@ -284,7 +267,7 @@ struct city_app : public DXWindow, public DXDevice {
 
 
 		XMFLOAT4X4 camT; XMStoreFloat4x4(&camT,
-			cam.GetViewMatrix()*cam.GetProjectionMatrix(45.f, aspectRatio, 1.f, 5000.f));
+			cam.GetViewMatrix()*cam.GetProjectionMatrix(45.f, aspectRatio, 1.f, 1000.f));
 
 		//wchar_t out[32];
 		//wsprintf(out, L"FPS: %d\n", tim.GetFramesPerSecond());
@@ -358,8 +341,6 @@ struct city_app : public DXWindow, public DXDevice {
 		}
 		
 		//postprocess step, (color, extra) -> backbuffer
-
-
 		start_render_to_backbuffer(cl, true, false);
 		cl->SetDescriptorHeaps(1, &rtsrv_heap.heap);
 		postprocess_pass.apply(cl);

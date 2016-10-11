@@ -10,5 +10,5 @@ cbuffer cb0 : register(b0)
 PSOutput main(PSInput input)
 {
 	float3 col = float3(0.11f, 0.11f, 0.1f);
-	return OV(float4(col, 1.f));
+	return OV(float4(col, 1.f), input);
 }
